@@ -5,12 +5,15 @@
 <meta name="theme-color" content="#0a0c12"><meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" href="icon-192.png">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
 <title>SM TV — Live TV, Sports, Entertainment</title>
 <style>
 :root{--bg:#0a0c12;--surface:#131722;--surface2:#1a2030;--border:#ffffff14;--txt:#fff;--mut:#9aa3b5;--acc:#ff2d55;--acc2:#ff5c39;--live:#22c55e;--r:16px;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
-/* ANDROID NATIVE: Roboto (built-in) + full-screen immersive */
-*{box-sizing:border-box;margin:0;padding:0;font-family:Roboto,"Android Sans","Noto Sans",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent}
+/* ANDROID NATIVE: system Roboto (zero download, zero flash) + full-screen immersive */
+*{box-sizing:border-box;margin:0;padding:0;font-family:Roboto,"Android Sans","Noto Sans",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+img{-webkit-touch-callout:none}
+/* INSTALL BANNER */
+#installBar{display:none;position:fixed;left:12px;right:12px;bottom:calc(84px + var(--sab));z-index:40;background:linear-gradient(135deg,#1a2030,#131722);border:1px solid #ff2d5566;border-radius:18px;padding:14px;align-items:center;gap:12px;box-shadow:0 14px 40px #000c}
+#installBar.show{display:flex}
 html{overscroll-behavior:none;background:var(--bg);height:100%}
 body{background:var(--bg);color:var(--txt);height:100dvh;min-height:100dvh;min-height:-webkit-fill-available;width:100%;overscroll-behavior:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none;position:fixed;inset:0;overflow:hidden}
 button{cursor:pointer;border:0;font-family:inherit;touch-action:manipulation;background:none;color:inherit}
@@ -232,6 +235,8 @@ header.top{display:none!important}
 
 <nav class="bnav" id="bnav"></nav>
 
+<div id="installBar"><div class="logo-mark" style="width:44px;height:44px;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div><div style="flex:1"><b style="font-size:13.5px">Install SM TV App</b><br><small style="color:var(--mut);font-size:11px">No URL bar — full-screen like Play Store app</small></div><button class="chip active" onclick="installApp()">INSTALL</button><button class="viewall" onclick="hideInstall()">X</button></div>
+
 <div id="ntModal"><div id="ntCard"><div style="display:flex;gap:12px;align-items:center"><div class="logo-mark" style="width:44px;height:44px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></div><div style="flex:1"><b id="ntPopT" style="font-size:14px"></b><br><small id="ntPopM" style="color:var(--mut);font-size:12px"></small></div></div><div style="display:flex;gap:10px;margin-top:14px"><button class="btn sec2" style="flex:1;justify-content:center" onclick="closeNt()">LATER</button><button class="btn pri" style="flex:1;justify-content:center" onclick="openNt()">VIEW</button></div></div></div>
 
 <div id="pushModal" style="position:fixed;inset:0;z-index:95;background:#000b;display:none;align-items:center;justify-content:center;padding:24px"><div style="background:var(--surface2);border:1px solid var(--border);border-radius:22px;padding:24px 20px;text-align:center;max-width:340px"><div class="logo-mark" style="width:56px;height:56px;margin:0 auto 12px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg></div><b style="font-size:16px">Never miss a match?</b><p class="meta" style="justify-content:center;margin:8px 0 16px;line-height:1.6">Allow alerts — big matches, live goals and new channels, straight to your phone. No spam, only match time.</p><div style="display:flex;gap:10px"><button class="btn sec2" style="flex:1;justify-content:center" onclick="pushLater()">LATER</button><button class="btn pri" style="flex:1;justify-content:center" onclick="pushAllow()">ALLOW</button></div></div></div>
@@ -387,7 +392,17 @@ function checkIn(){var today=new Date().toDateString();if(V.lastDay===today)retu
 /* capture incoming referral */
 try{var m=(location.hash||"").match(/#r=([A-Za-z0-9-]+)/);if(m&&m[1]!==V.code){try{localStorage.setItem("smtvRefBy",m[1])}catch(e){}}}catch(e){}
 setTimeout(function(){var s=$("splash");if(s)s.classList.add("off")},1600);
-document.addEventListener("pointerdown",function(e){var t=e.target.closest?e.target.closest(".ccard,.chip,.pcard,.scat,.bnav button,.watch"):null;if(t){t.classList.remove("pk");t.classList.add("rip");void t.offsetWidth;t.classList.add("pk");setTimeout(function(){t.classList.remove("pk")},550)}});
+/* INSTALL PROMPT - the #1 fix for "web feel" (removes URL bar) */
+var deferredP=null,isStandalone=false;
+try{isStandalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true}catch(e){}
+window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredP=e;maybeInstallBar()});
+function maybeInstallBar(){if(isStandalone)return;try{if(localStorage.getItem("smtvInstallHide"))return}catch(e){}var visits=0;try{visits=parseInt(localStorage.getItem("smtvVisits")||"0")+1;localStorage.setItem("smtvVisits",String(visits))}catch(e){}if(deferredP||visits>=1)$("installBar").classList.add("show")}
+function installApp(){if(deferredP){deferredP.prompt();deferredP.userChoice.then(function(){deferredP=null;$("installBar").classList.remove("show")})}else{qToast("Browser menu > Add to Home Screen")}}
+function hideInstall(){try{localStorage.setItem("smtvInstallHide","1")}catch(e){}$("installBar").classList.remove("show")}
+setTimeout(maybeInstallBar,3000);
+/* HAPTIC vibration on tap (Android native feel) */
+document.addEventListener("pointerdown",function(e){var t=e.target.closest?e.target.closest(".ccard,.chip,.pcard,.scat,.bnav button,.watch,.iconbtn"):null;if(t){try{if(navigator.vibrate)navigator.vibrate(8)}catch(x){}t.classList.remove("pk");t.classList.add("rip");void t.offsetWidth;t.classList.add("pk");setTimeout(function(){t.classList.remove("pk")},550)}});
+document.addEventListener("contextmenu",function(e){e.preventDefault()});
 function toggleFS(){var b=$("playerBox");try{if(document.fullscreenElement)document.exitFullscreen();else if(b.requestFullscreen)b.requestFullscreen();else{var v=$("v");if(v&&v.requestFullscreen)v.requestFullscreen()}}catch(e){}}
 var cg=$("chanGrid");if(cg)cg.innerHTML=Array(8).fill('<div class="skel"></div>').join("");
 paint();paintViral();
