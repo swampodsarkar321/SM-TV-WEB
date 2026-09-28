@@ -468,7 +468,7 @@ var deferredP=null,isStandalone=false;
 try{isStandalone=window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true}catch(e){}
 window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredP=e;maybeInstallBar()});
 function maybeInstallBar(){if(isStandalone)return;try{if(localStorage.getItem("smtvInstallHide"))return}catch(e){}var visits=0;try{visits=parseInt(localStorage.getItem("smtvVisits")||"0")+1;localStorage.setItem("smtvVisits",String(visits))}catch(e){}if(deferredP||visits>=1)$("installBar").classList.add("show")}
-function installApp(){if(deferredP){deferredP.prompt();deferredP.userChoice.then(function(){deferredP=null;$("installBar").classList.remove("show")})}else{qToast("Browser menu > Add to Home Screen")}}
+function installApp(){location.href="https://www.appcreator24.com/app4202360-457uat"}
 function hideInstall(){try{localStorage.setItem("smtvInstallHide","1")}catch(e){}$("installBar").classList.remove("show")}
 setTimeout(maybeInstallBar,3000);
 /* HAPTIC vibration on tap (Android native feel) */
