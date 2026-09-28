@@ -415,6 +415,5 @@ function openNt(){closeNt();if(NOTIFS.length){try{localStorage.setItem("smtvSeen
 function checkNtPop(){var un=NOTIFS.filter(function(n){return (n.ts||0)>seenNt});if(!un.length)return;var n=un[un.length-1];$("ntPopT").textContent=n.title;$("ntPopM").textContent=n.msg;$("ntModal").classList.add("show")}
 var ntLoaded=false;
 try{rdb.ref("smtvNotifs").on("value",function(snap){var v=snap.val();if(!v||!v.length)return;var grew=ntLoaded&&v.length>NOTIFS.length;NOTIFS=v;paintNtList();if(grew)checkNtPop();if(!ntLoaded){ntLoaded=true;setTimeout(checkNtPop,2500)}})}catch(e){}
-}catch(e){loadM3U()}
 </script>
 </body></html>
