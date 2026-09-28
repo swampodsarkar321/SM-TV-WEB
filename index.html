@@ -257,8 +257,8 @@ header.top{display:none!important}
 <button class="btn pri" style="width:100%;justify-content:center" onclick="watchCoinAd()">WATCH AD +10 COINS</button>
 <p class="meta" id="coinMsg" style="justify-content:center;margin:6px 0 2px"></p>
 <div class="sec"><h2>BUY VIP WITH COINS (NO ADS)</h2></div>
-<div class="tier"><div style="flex:1"><b style="font-size:13px">VIP 7 Days</b><br><small style="color:var(--mut);font-size:11px">300 coins - zero ads</small></div><button class="chip active" onclick="buyVip(7)">BUY</button></div>
-<div class="tier"><div style="flex:1"><b style="font-size:13px">VIP Forever</b><br><small style="color:var(--mut);font-size:11px">1000 coins - zero ads forever</small></div><button class="chip active" onclick="buyVip(0)">BUY</button></div>
+<div class="tier"><div style="flex:1"><b style="font-size:13px">VIP 7 Days</b><br><small style="color:var(--mut);font-size:11px" id="vip7Lbl">300 coins - zero ads</small></div><button class="chip active" onclick="buyVip(7)">BUY</button></div>
+<div class="tier"><div style="flex:1"><b style="font-size:13px">VIP Forever</b><br><small style="color:var(--mut);font-size:11px" id="vipLifeLbl">1000 coins - zero ads forever</small></div><button class="chip active" onclick="buyVip(0)">BUY</button></div>
 <div class="sec"><h2>REFER AND EARN</h2></div>
 <div class="rcode"><small style="color:var(--mut);font-size:10px;letter-spacing:2px;font-weight:800">YOUR REFERRAL CODE</small><br><b id="refCode">SM-XXXX</b><br><button class="chip active" style="margin-top:10px" onclick="copyRef()">COPY LINK</button></div>
 <div class="sec"><h2>DAILY CHECK-IN STREAK</h2><button class="viewall" id="streakBtn" onclick="checkIn()">Check in today</button></div>
@@ -429,16 +429,17 @@ function bufShow(on,msg){var b=$("bufBox");if(!b)return;b.style.display=on?"grid
 /* COINS + VIP + PREROLL */
 var MONETAG_LINK="";
 var COIN_PER_AD=10,VIP7_COST=300,VIPLIFE_COST=1000,AD_COOLDOWN=30,AD_DAILY_MAX=20;
+var AD_ENABLED=true,AD_PREROLL=true;
 var coins=0,vipUntil=0,adLastTs=0,adDayCount=0,adDay="";
 try{coins=parseInt(localStorage.getItem("smtvCoins")||"0");vipUntil=parseInt(localStorage.getItem("smtvVip")||"0")}catch(e){}
 function saveCoins(){try{localStorage.setItem("smtvCoins",String(coins));localStorage.setItem("smtvVip",String(vipUntil))}catch(e){}}
 function isVip(){return vipUntil=== -1||Date.now()<vipUntil}
-function paintCoins(){var b=$("coinBal");if(b)b.textContent=coins;var v=$("vipState");if(v){if(vipUntil===-1)v.textContent="VIP+";else if(Date.now()<vipUntil)v.textContent="VIP "+Math.ceil((vipUntil-Date.now())/864e5)+"d";else v.textContent="FREE"}}
+function paintCoins(){var b=$("coinBal");if(b)b.textContent=coins;var v=$("vipState");if(v){if(vipUntil===-1)v.textContent="VIP+";else if(Date.now()<vipUntil)v.textContent="VIP "+Math.ceil((vipUntil-Date.now())/864e5)+"d";else v.textContent="FREE"}var l1=$("vip7Lbl");if(l1)l1.textContent=VIP7_COST+" coins - zero ads";var l2=$("vipLifeLbl");if(l2)l2.textContent=VIPLIFE_COST+" coins - zero ads forever"}
 function adLimits(){var today=new Date().toDateString();if(adDay!==today){adDay=today;adDayCount=0}try{adDay=localStorage.getItem("smtvAdDay")||"";if(adDay!==today){adDay=today;adDayCount=0}else adDayCount=parseInt(localStorage.getItem("smtvAdN")||"0")}catch(e){}if(adDayCount>=AD_DAILY_MAX)return "Daily limit reached - come back tomorrow";if(Date.now()-adLastTs<AD_COOLDOWN*1000)return "Wait "+Math.ceil((AD_COOLDOWN*1000-(Date.now()-adLastTs))/1000)+"s";try{adLastTs=parseInt(localStorage.getItem("smtvAdLast")||"0")}catch(e){}if(Date.now()-adLastTs<AD_COOLDOWN*1000)return "Wait a few seconds";return ""}
 function creditAd(){coins+=COIN_PER_AD;adDayCount++;adLastTs=Date.now();try{localStorage.setItem("smtvAdLast",String(adLastTs));localStorage.setItem("smtvAdDay",adDay);localStorage.setItem("smtvAdN",String(adDayCount))}catch(e){}saveCoins();paintCoins()}
-function watchCoinAd(){var err=adLimits();var m=$("coinMsg");if(err){if(m)m.textContent=err;return}if(!MONETAG_LINK){creditAd();if(m)m.textContent="+"+COIN_PER_AD+" coins (demo - add Monetag link)";return}var w=window.open(MONETAG_LINK,"_blank");var t0=Date.now();var iv=setInterval(function(){if(w.closed||Date.now()-t0>20000){clearInterval(iv);if(Date.now()-t0>8000){creditAd();if(m)m.textContent="+"+COIN_PER_AD+" coins earned!"}else if(m)m.textContent="Stay longer on the ad page"}},1000);if(m)m.textContent="Ad opened - stay 8+ seconds..."}
+function watchCoinAd(){var err=adLimits();var m=$("coinMsg");if(!AD_ENABLED){if(m)m.textContent="Ads paused right now - check back soon";return}if(err){if(m)m.textContent=err;return}if(!MONETAG_LINK){creditAd();if(m)m.textContent="+"+COIN_PER_AD+" coins (demo - add Monetag link)";return}var w=window.open(MONETAG_LINK,"_blank");var t0=Date.now();var iv=setInterval(function(){if(w.closed||Date.now()-t0>20000){clearInterval(iv);if(Date.now()-t0>8000){creditAd();if(m)m.textContent="+"+COIN_PER_AD+" coins earned!"}else if(m)m.textContent="Stay longer on the ad page"}},1000);if(m)m.textContent="Ad opened - stay 8+ seconds..."}
 function buyVip(days){var cost=days===0?VIPLIFE_COST:VIP7_COST;if(coins<cost){var m=$("coinMsg");if(m)m.textContent="Need "+cost+" coins - watch more ads";return}coins-=cost;vipUntil=days===0?-1:Math.max(Date.now(),vipUntil)+days*864e5;saveCoins();paintCoins();qToast(days===0?"VIP FOREVER activated":"VIP 7 days activated")}
-function playCur(bypass){var s=curServers[curIdx];var v=$("v");if(!v)return;if(!s){$("playerHint").textContent="Demo channel - stream loading...";return}if(!bypass&&!isVip()&&MONETAG_LINK){showPreroll();return}$("playerIdle").style.display="none";qLevel=-1;setBadge(null);paintQ([]);bufShow(true,"Connecting to "+(s.label||"server")+"…");stopHls();var url=s.url;
+function playCur(bypass){var s=curServers[curIdx];var v=$("v");if(!v)return;if(!s){$("playerHint").textContent="Demo channel - stream loading...";return}if(!bypass&&!isVip()&&AD_ENABLED&&AD_PREROLL&&MONETAG_LINK){showPreroll();return}$("playerIdle").style.display="none";qLevel=-1;setBadge(null);paintQ([]);bufShow(true,"Connecting to "+(s.label||"server")+"…");stopHls();var url=s.url;
 if(window.Hls&&Hls.isSupported()&&url.indexOf(".m3u8")>=0){hls=new Hls({capLevelToPlayerSize:true});hls.loadSource(url);hls.attachMedia(v);
 hls.on(Hls.Events.MANIFEST_PARSED,function(){paintQ(hls.levels);setBadge("AUTO");bufShow(false);v.play().catch(function(){});qToast("Playing - "+curName)});
 hls.on(Hls.Events.LEVEL_SWITCHED,function(ev,data){var L=hls.levels[data.level];var label=L.height?L.height+"p":Math.round(L.bitrate/1000)+"k";if(qLevel===-1)setBadge("AUTO "+label);else setBadge(label);bufShow(false)});
@@ -542,5 +543,6 @@ function openNt(){closeNt();if(NOTIFS.length){try{localStorage.setItem("smtvSeen
 function checkNtPop(){var un=NOTIFS.filter(function(n){return (n.ts||0)>seenNt});if(!un.length)return;var n=un[un.length-1];$("ntPopT").textContent=n.title;$("ntPopM").textContent=n.msg;$("ntModal").classList.add("show")}
 var ntLoaded=false;
 try{rdb.ref("smtvNotifs").on("value",function(snap){var v=snap.val();if(!v||!v.length)return;var grew=ntLoaded&&v.length>NOTIFS.length;NOTIFS=v;paintNtList();if(grew)checkNtPop();if(!ntLoaded){ntLoaded=true;setTimeout(checkNtPop,2500)}})}catch(e){}
+try{rdb.ref("smtvAds").on("value",function(snap){var a=snap.val();if(!a)return;AD_ENABLED=a.enabled!==false;AD_PREROLL=a.preroll!==false;if(a.link!==undefined)MONETAG_LINK=a.link||"";if(a.coinPerAd)COIN_PER_AD=a.coinPerAd;if(a.vip7)VIP7_COST=a.vip7;if(a.vipLife)VIPLIFE_COST=a.vipLife;paintCoins()})}catch(e){}
 </script>
 </body></html>
