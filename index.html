@@ -170,8 +170,8 @@ header.top{display:none!important}
 
 <section class="view" id="v-livetv"><div class="hero"><h1>Live TV</h1><p>All channels streaming now</p></div><div class="chips" id="liveChips"></div><div class="cgrid" id="liveGrid" style="grid-template-columns:repeat(auto-fill,minmax(100px,1fr))"></div></section>
 
-<section class="view" id="v-sports"><div class="hero"><h1>Sports</h1><p>Browse by category</p></div><div class="sportgrid" id="sportGrid" style="margin-top:16px"></div>
-<div class="sec"><h2><span class="live-dot"></span>TRENDING MATCHES</h2></div><div class="hscroll" id="liveRow2"></div></section>
+<section class="view" id="v-sports"><div class="hero"><h1>Sports</h1><p>Tap a category to filter matches</p></div><div class="sportgrid" id="sportGrid" style="margin-top:16px"></div>
+<div class="sec"><h2><span class="live-dot"></span><span id="sportSecT">TRENDING MATCHES</span></h2><button class="viewall" id="sportClear" style="display:none" onclick="filterSport(null)">Clear X</button></div><div class="hscroll" id="liveRow2"></div></section>
 
 <section class="view" id="v-schedule"><div class="hero"><h1>Sports Schedule</h1><p>Never miss a match</p></div><div class="chips" id="schedTabs"></div><div class="dates" id="dateRow"></div><div id="schedList"></div></section>
 
@@ -294,14 +294,19 @@ function chanCard(c){var safe=esc(c[0]);return '<div class="ccard rip" onclick="
 function paint(){
 $("bnav").innerHTML=BN.map(function(n){return '<button class="'+(cur===n[0]||((cur==="schedule"||cur==="search"||cur==="channel"||cur==="event")&&n[0]==="more")?"on":"")+'" onclick="go(\''+n[0]+'\')"><span class="bi">'+IC[n[1]]+'</span>'+n[2]+'</button>'}).join("");
 $("liveChips").innerHTML=CHIPS.map(function(c,i){return '<button class="chip '+(i===0?"active":"")+'">'+c+'</button>'}).join("");
-$("liveRow").innerHTML=$("liveRow2").innerHTML=$("relRow").innerHTML=EV.map(liveCard).join("");
+$("liveRow").innerHTML=$("relRow").innerHTML=EV.map(liveCard).join("");
+paintSportEvents();
 var pool=REAL;
 var noCh='<div class="empty" style="grid-column:1/-1"><b>No channels yet</b><p>Please check back soon</p></div>';
 $("liveGrid").innerHTML=pool.length?pool.slice(0,120).map(chanCard).join(""):noCh;
 $("upFilter").innerHTML=["Today","Tomorrow","Upcoming"].map(function(t,i){return '<button class="chip '+(i===0?"active":"")+'">'+t+'</button>'}).join("");
 $("upList").innerHTML=EV.map(function(e,i){var tm=e[7].split(",")[1]||"9 PM";var live=evLiveNow(e);return '<div class="scard"><div class="timebox"><b>'+tm+'</b><span>'+(live?"LIVE":evCountShort(e))+'</span></div><div style="flex:1"><span class="sport-tag">'+e[0]+'</span><div style="font-weight:800;font-size:13.5px;margin-top:6px">'+e[2]+' <span style="color:var(--mut)">vs</span> '+e[5]+'</div><div class="meta">'+IC.clock+' '+e[7]+(e[9]?' · TV: '+e[9]:'')+'</div>'+(live?"":(evCountdown(e)?'<div class="meta" style="color:#f59e0b;font-weight:800">'+evCountdown(e)+'</div>':""))+'</div><button class="iconbtn" onclick="openEventByIdx('+i+')">'+IC.play+'</button></div>'}).join("");
 var SG=[["football","Football","linear-gradient(135deg,#16a34a,#052e16)"],["cricket","Cricket","linear-gradient(135deg,#2563eb,#0c1a4b)"],["basket","Basketball","linear-gradient(135deg,#ea580c,#431407)"],["tennis","Tennis","linear-gradient(135deg,#65a30d,#1a2e05)"],["belt","WWE","linear-gradient(135deg,#a21caf,#3b0764)"],["race","Formula 1","linear-gradient(135deg,#dc2626,#450a0a)"],["golf","Golf","linear-gradient(135deg,#059669,#022c22)"],["rugby","Rugby","linear-gradient(135deg,#4f46e5,#1e1b4b)"]];
-$("sportGrid").innerHTML=SG.map(function(s){var lv=0,up=0;for(var i=0;i<EV.length;i++){if((EV[i][13]||"").toLowerCase()===s[1].toLowerCase()){if(evLiveNow(EV[i]))lv++;else up++}}var lbl=lv?lv+" live":(up?up+" upcoming":"No events");return '<div class="scat" style="background:'+s[2]+'"><div class="si">'+IC[s[0]]+'</div><b>'+s[1]+'</b><small>'+lbl+'</small></div>'}).join("");
+var sportFilter=null;
+function filterSport(c){sportFilter=(sportFilter===c||c===null)?null:c;paintSportEvents();paint()}
+function paintSportEvents(){var list=[];for(var i=0;i<EV.length;i++){if(!sportFilter||(EV[i][13]||"").toLowerCase()===sportFilter.toLowerCase())list.push({e:EV[i],i:i})}var lr=$("liveRow2");if(lr)lr.innerHTML=list.length?list.map(function(o){return liveCard(o.e,o.i)}).join(""):'<div class="empty"><b>No matches in '+sportFilter+'</b></div>';var st=$("sportSecT");if(st)st.textContent=sportFilter?sportFilter.toUpperCase()+" MATCHES":"TRENDING MATCHES";var cl=$("sportClear");if(cl)cl.style.display=sportFilter?"block":"none"}
+$("sportGrid").innerHTML=SG.map(function(s){var lv=0,up=0;for(var i=0;i<EV.length;i++){if((EV[i][13]||"").toLowerCase()===s[1].toLowerCase()){if(evLiveNow(EV[i]))lv++;else up++}}var lbl=lv?lv+" live":(up?up+" upcoming":"No events");var sel=sportFilter===s[1]?'border-color:var(--acc);box-shadow:0 0 0 1px var(--acc);':"";return '<div class="scat rip" style="background:'+s[2]+';'+sel+'" onclick="filterSport(\''+s[1]+'\')"><div class="si">'+IC[s[0]]+'</div><b>'+s[1]+'</b><small>'+lbl+'</small></div>'}).join("");
+paintSportEvents();
 $("schedTabs").innerHTML=["All","Football","Cricket","Basketball","Tennis","WWE"].map(function(t,i){return '<button class="chip '+(i===0?"active":"")+'">'+t+'</button>'}).join("");
 $("dateRow").innerHTML=["<","Today","29 Sep","30 Sep","01 Oct",">"].map(function(t,i){return '<button class="date '+(i===1?"active":"")+'">'+t+'</button>'}).join("");
 $("schedList").innerHTML=$("upList").innerHTML;
